@@ -81,3 +81,4 @@ def go_open(open_me, boxes, unlocked_lst):
         if next_boxes.count(None) == i:  # All routes are taken
             return None
         return next_boxes
+        
