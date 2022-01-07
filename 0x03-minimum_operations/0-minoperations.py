@@ -29,3 +29,4 @@ def minOperations(n):
     else:
         numOperations = sum(factors(n))
         return int(numOperations)
+        
