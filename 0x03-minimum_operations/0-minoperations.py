@@ -1,32 +1,26 @@
 #!/usr/bin/python3
-"""
-find fewest number of operations needed to result in
+'''
+In a text file, there is a single character H. Your text editor can execute
+only two operations in this file: Copy All and Paste. Given a number n, write
+a method that calculates the fewest number of operations needed to result in
 exactly n H characters in the file.
-"""
-
-import math
-
-
-def factors(n):
-    """factors of n number"""
-    mylist = []
-    while n % 2 == 0:
-        mylist.append(2)
-        n = n / 2
-    for i in range(3, int(math.sqrt(n)) + 1, 2):
-        while n % i == 0:
-            mylist.append(i)
-            n = n / i
-    if n > 2:
-        mylist.append(n)
-    return mylist
+'''
 
 
 def minOperations(n):
-    """calculate the minimum operations"""
-    if type(n) != int or n < 2:
+    '''
+    minOperations - Return the fewest number of operations needed
+    @n: The number of H characters needed
+    Return: The fewest number of operations needed, or 0
+    '''
+    if n < 2:
         return 0
-    else:
-        numOperations = sum(factors(n))
-        return int(numOperations)
-        
+    divisor, sum = 2, 0
+    while divisor <= n / 2:
+        if n % divisor == 0:
+            n //= divisor
+            sum += divisor
+        else:
+            divisor += 1
+    return sum + n
+    
