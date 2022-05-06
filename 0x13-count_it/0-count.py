@@ -1,66 +1,65 @@
 #!/usr/bin/python3
+""" 0x13. Count it! - task 0. Count it!
 """
-Count it problem
-"""
-import requests
+from re import findall, IGNORECASE
+from requests import get
 
 
-def count_words(subreddit, word_list, kw_cont={}, next_pg=None, reap_kw={}):
+def count_words(subreddit, word_list, word_totals={}, after=''):
+    """ Tallies appearances of search terms in all "hot" post titles for a
+    given subreddit.
+        Recursively queries Reddit API, one page per frame, to parse titles of
+    all "hot" posts and count occurances of each word in a given list of
+    search terms. Once finished, prints all non-zero totals sotrted first in
+    descending order by count, and then in alphabetic order.
+    Args:
+        subreddit (str): subreddit to query
+        word_list (list): list of words to search for in titles of all posts
+           in "hot"
+        word_totals (dict): running total of search term occurances prior to
+            current page/frame
+        after (str): API name for last post in previous page
+    Return:
+        dict of running word totals from titles in all API pages parsed in
+    current recursion frame and those below
     """
-    *******************************************************
-    **** Recursive function that queries the Reddit API ***
-    ******* prints a sorted count of given keywords *******
-    *******************************************************
-    @subreddit: string representing subreddit to search for
-    @word_list: collection of keywords to search in the
-                subreddit
-    @kw_cont: a copy of counted words
-    @next_pg: next page
-    @reap_kw: a dict for the counted words
-    Return: Nothing
-    """
-    headers = {"User-Agent": "me"}
+    limit = 100
+    # (adding request parameter raw_json deactivates default ampersand escape)
+    url = 'https://www.reddit.com/r/{}/hot.json?raw_json=1&after={}&limit={}'
+    response = get(url.format(subreddit, after, limit),
+                   headers={'User-Agent': 'allelomorph-app2'})
 
-    if next_pg:
-        subRhot = requests.get('https://reddit.com/r/' + subreddit +
-                               '/hot.json?after=' + next_pg,
-                               headers=headers)
-    else:
-        subRhot = requests.get('https://reddit.com/r/' + subreddit +
-                               '/hot.json', headers=headers)
-
-    if subRhot.status_code == 404:
+    # 404 or other error, or no search terms
+    if response.status_code != 200 or len(word_list) == 0:
         return
 
-    if kw_cont == {}:
+    regex = '^{}$|^{} +| +{} +| +{}$'
+    word_count = dict.fromkeys([word.lower() for word in word_list], 0)
+    current_page_list = response.json().get('data').get('children', [])
+
+    # search titles in current page for terms
+    for post in current_page_list:
+        title = post.get('data').get('title', '')
         for word in word_list:
-            kw_cont[word] = 0
-            reap_kw[word] = word_list.count(word)
+            count = len(findall(regex.format(word, word, word, word),
+                                title, IGNORECASE))
+            word_count[word.lower()] += count
 
-    subRhot_dict = subRhot.json()
-    subRhot_data = subRhot_dict['data']
-    next_pg = subRhot_data['after']
-    subRhot_posts = subRhot_data['children']
+    # update totals
+    for key, value in word_count.items():
+        if key in word_totals:
+            word_totals[key] += value
+        else:
+            word_totals[key] = value
 
-    for post in subRhot_posts:
-        post_data = post['data']
-        post_title = post_data['title']
-        title_words = post_title.split()
-        for w in title_words:
-            for key in kw_cont:
-                if w.lower() == key.lower():
-                    kw_cont[key] += 1
+    # last page reached, print totals
+    if len(current_page_list) < limit:
+        for item in sorted(word_totals.items(),
+                           key=lambda item: (-item[1], item[0])):
+            if item[1] > 0:
+                print('{}: {}'.format(item[0], item[1]))
+        return
 
-    if next_pg:
-        count_words(subreddit, word_list, kw_cont, next_pg, reap_kw)
-
-    else:
-        for key, val in reap_kw.items():
-            if val > 1:
-                kw_cont[key] *= val
-
-        sorted_abc = sorted(kw_cont.items(), key=lambda x: x[0])
-        sorted_res = sorted(sorted_abc, key=lambda x: (-x[1], x[0]))
-        for res in sorted_res:
-            if res[1] > 0:
-                print('{}: {}'.format(res[0], res[1]))
+    # still more titles to parse, recurse to next frame
+    after = current_page_list[-1].get('data').get('name', '')
+    return count_words(subreddit, word_list, word_totals, after)
