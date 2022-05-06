@@ -1,12 +1,25 @@
 #!/usr/bin/python3
-"""keywords titles of all hot articles"""
+"""
+Count it problem
+"""
 import requests
-import sys
 
 
 def count_words(subreddit, word_list, kw_cont={}, next_pg=None, reap_kw={}):
-    """all hot posts by keyword"""
-    headers = {"User-Agent": "julgachancipa"}
+    """
+    *******************************************************
+    **** Recursive function that queries the Reddit API ***
+    ******* prints a sorted count of given keywords *******
+    *******************************************************
+    @subreddit: string representing subreddit to search for
+    @word_list: collection of keywords to search in the
+                subreddit
+    @kw_cont: a copy of counted words
+    @next_pg: next page
+    @reap_kw: a dict for the counted words
+    Return: Nothing
+    """
+    headers = {"User-Agent": "me"}
 
     if next_pg:
         subRhot = requests.get('https://reddit.com/r/' + subreddit +
